@@ -9,7 +9,7 @@ function createGround(world) {
 
     fixDef.shape = new b2PolygonShape();
     fixDef.density = 20.0;
-    fixDef.friction = 0.8;
+    fixDef.friction = 1;
     fixDef.restitution = 0.15;
 
     //道路生成

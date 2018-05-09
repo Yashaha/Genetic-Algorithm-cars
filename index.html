@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>遗传算法小车</title>
+    <meta charset="utf-8"/>
+    <style>
+        #camera{
+            width:1200px;
+            height:600px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body onload="init();">
+<div id="camera" style="border: 1px solid red;">
+    <canvas id="canvas" width="1200" height="600" style="background-color:#333333;"></canvas>
+</div>
+</body>
+<script type="text/javascript" src="Box2D.js"></script>
+<script type="text/javascript" src="createCar.js"></script>
+<script type="text/javascript" src="createGround.js"></script>
+<script>
+    var   b2Vec2 = Box2D.Common.Math.b2Vec2
+    ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
+    ,	b2Body = Box2D.Dynamics.b2Body
+    ,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+    ,	b2Fixture = Box2D.Dynamics.b2Fixture
+    ,	b2World = Box2D.Dynamics.b2World
+    ,	b2MassData = Box2D.Collision.Shapes.b2MassData
+    ,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+    ,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+    ,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+    ,   b2DistanceJoint = Box2D.Dynamics.Joints.b2DistanceJoint
+    ,   b2DistanceJointDef = Box2D.Dynamics.Joints.b2DistanceJointDef
+    ,   b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef
+;
+
+    function init() {
+        var canvas = document.getElementById("canvas");
+        var context = canvas.getContext("2d");
+
+        var worldScale = 30;
+        var world = new b2World(new b2Vec2(0, 10),true);
+        var camera = {
+            x:0,
+            y:0
+        }
+
+        function debugDraw(){
+            var debugDraw = new b2DebugDraw();
+            debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
+            debugDraw.SetDrawScale(30.0);
+            debugDraw.SetFillAlpha(0.1);
+            debugDraw.SetLineThickness(1.0);
+            debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+            world.SetDebugDraw(debugDraw);
+        };
+        function update() {
+            context.clearRect(camera.x,camera.y,1200,600);
+            world.Step(1/60,10,10);
+            world.DrawDebugData();
+            //绘制渲染到canvas上的过程，其实就是读取世界种所有物体的坐标和角度数据，然后以此绘制物体图片
+            for(var b = world.m_bodyList; b != null; b = b.m_next){
+                if(b.GetUserData()){
+                    context.save();
+                    context.translate(b.GetPosition().x*worldScale,b.GetPosition().y*worldScale);
+                    context.rotate(b.GetAngle());
+                    context.drawImage(b.GetUserData(),-b.GetUserData().width/2,-b.GetUserData().height/2);
+                    context.restore();
+                }
+            }
+            world.ClearForces();
+            update_camera();
+        };
+        function update_camera() {
+            var target_x,target_y;
+            var x_old = camera.x;
+            var y_old = camera.y;
+            var b = world.m_bodyList.m_next.m_next;
+            target_x = b.GetPosition().x * worldScale;
+            target_y = b.GetPosition().y * worldScale;
+            camera.x = target_x - 600;
+            camera.y = target_y - 400;
+            context.translate(x_old-camera.x, y_old-camera.y);
+        }
+        createGround(world);
+        createCar(world);
+        debugDraw();
+        setInterval(update,1000/60);
+    }
+</script>
+</html>

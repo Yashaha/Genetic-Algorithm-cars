@@ -23,7 +23,6 @@ function createCar(world, Chromosome) {
     fixDef.filter.categoryBits = 0x0002;
     fixDef.filter.maskBits = 0x0001;
 
-    console.log(vector);
     //依次构成三角形（box2d不支持凹多边形，所以要分割成凸多边形）
     for(var i = 0; i < vector.length; i++){
         var triangle = new Array();

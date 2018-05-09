@@ -3686,7 +3686,7 @@ Box2D.postDefs = [];
    }
    b2Settings.b2Assert = function (a) {
       if (!a) {
-         //throw "Assertion Failed";
+         throw "Assertion Failed";
       }
    }
    Box2D.postDefs.push(function () {

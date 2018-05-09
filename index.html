@@ -17,8 +17,10 @@
 </div>
 </body>
 <script type="text/javascript" src="Box2D.js"></script>
-<script type="text/javascript" src="createCar.js"></script>
+<script type="text/javascript" src="chromosome_info.js"></script>
 <script type="text/javascript" src="createGround.js"></script>
+<script type="text/javascript" src="createCar.js"></script>
+<script type="text/javascript" src="fitness.js"></script>
 <script>
     var   b2Vec2 = Box2D.Common.Math.b2Vec2
     ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -38,14 +40,22 @@
     function init() {
         var canvas = document.getElementById("canvas");
         var context = canvas.getContext("2d");
-
         var worldScale = 30;
-        var world = new b2World(new b2Vec2(0, 10),true);
+        var world = new b2World(new b2Vec2(0, 9.8),true);
         var camera = {
             x:0,
             y:0
         }
+        var initChromosomeGroup = new Array();//初始种群染色体
+        createGround(world);
+        for(var i = 0;i < 10;i++){
+            initChromosomeGroup[i] = randomChromosome(8);
+            createCar(world,initChromosomeGroup[i]);
+        }
+        debugDraw();
+        setInterval(function(){update()}, 1000/60);
 
+        //函数
         function debugDraw(){
             var debugDraw = new b2DebugDraw();
             debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
@@ -59,16 +69,6 @@
             context.clearRect(camera.x,camera.y,1200,600);
             world.Step(1/60,10,10);
             world.DrawDebugData();
-            //绘制渲染到canvas上的过程，其实就是读取世界种所有物体的坐标和角度数据，然后以此绘制物体图片
-            for(var b = world.m_bodyList; b != null; b = b.m_next){
-                if(b.GetUserData()){
-                    context.save();
-                    context.translate(b.GetPosition().x*worldScale,b.GetPosition().y*worldScale);
-                    context.rotate(b.GetAngle());
-                    context.drawImage(b.GetUserData(),-b.GetUserData().width/2,-b.GetUserData().height/2);
-                    context.restore();
-                }
-            }
             world.ClearForces();
             update_camera();
         };
@@ -76,17 +76,48 @@
             var target_x,target_y;
             var x_old = camera.x;
             var y_old = camera.y;
-            var b = world.m_bodyList.m_next.m_next;
-            target_x = b.GetPosition().x * worldScale;
-            target_y = b.GetPosition().y * worldScale;
+            var b_first = world.m_bodyList;
+            for(var b = world.m_bodyList; b != null; b = b.m_next){
+                if (b.GetUserData() == "carcircle"){
+                    if (b_first.GetPosition().x < b.GetPosition().x)
+                        b_first = b;
+                }
+            }
+            target_x = b_first.GetPosition().x * worldScale;
+            target_y = b_first.GetPosition().y * worldScale;
             camera.x = target_x - 600;
             camera.y = target_y - 400;
             context.translate(x_old-camera.x, y_old-camera.y);
         }
-        createGround(world);
-        createCar(world);
-        debugDraw();
-        setInterval(update,1000/60);
+        function del() {
+            //销毁车身和轮子的fixture，刚体仍然存在
+            for(var b = world.GetBodyList(); b != null; b = b.GetNext())
+                if (b.GetUserData() == "carbody" || b.GetUserData() == "carcircle")
+                    for(var f = b.GetFixtureList(); f != null; ){
+                        var f1 = f.GetNext();
+                        b.DestroyFixture(f);
+                        f = f1;
+                    }
+
+            //销毁所有关节
+            for(var j = world.GetJointList(); j != null;){
+                var j1 = j.GetNext();
+                world.DestroyJoint(j);
+                j = j1;
+            }
+
+
+            //重新设置刚体位置
+            /*for(var b = world.GetBodyList(); b != null; b = b.GetNext()){
+                if (b.GetUserData() == "carbody"){
+                    b.SetPosition(new b2Vec2(25, 11.5));
+                }
+            }*/
+
+        }
+
+
+
     }
 </script>
 </html>

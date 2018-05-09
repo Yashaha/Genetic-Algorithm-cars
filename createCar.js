@@ -1,13 +1,13 @@
-function createCar(world) {
+function createCar(world, Chromosome) {
     var bodyDef = new b2BodyDef();
     var fixDef = new b2FixtureDef();
     bodyDef.type = b2Body.b2_dynamicBody;
+    bodyDef.userData = "carbody";
 
 //////////////////////////////////////////////////////////
 ////////创建车身
 //////////////////////////////////////////////////////////
-    var vectorCount = 8;//随机点数量(至少为4)
-    var vector = random_vector(vectorCount);//生成随机点集并绕原点顺时针排列好
+    var vector = Chromosome[0];//车身基因
     var carbody_x = 25;//车身x坐标
     var carbody_y = 11.5;//车身y坐标
 
@@ -17,10 +17,13 @@ function createCar(world) {
 
     var carbody = world.CreateBody(bodyDef);
     fixDef.shape = new b2PolygonShape();
-    fixDef.density = 5;
+    fixDef.density = 3;
     fixDef.friction = 0.5;
     fixDef.restitution =0.15;
+    fixDef.filter.categoryBits = 0x0002;
+    fixDef.filter.maskBits = 0x0001;
 
+    console.log(vector);
     //依次构成三角形（box2d不支持凹多边形，所以要分割成凸多边形）
     for(var i = 0; i < vector.length; i++){
         var triangle = new Array();
@@ -40,38 +43,30 @@ function createCar(world) {
 //////////////////////////////////////////////////////////
 ////////创建车轮
 //////////////////////////////////////////////////////////
-    //在车身顶点中随机选择不同的两点作为车轮坐标
-    do{
-        var c1 = Math.floor(Math.random() * vectorCount);
-        var c2 = Math.floor(Math.random() * vectorCount);
-    }while(c1 == c2);
-    //c1c2直线距离
-    var c1c2 = Math.sqrt(Math.pow(vector[c1].x - vector[c2].x, 2) + Math.pow(vector[c1].y - vector[c2].y, 2));
 
-    //随机生成两个轮子半径
-    var r1 = Math.random() * 3;
-    var r2 = Math.random() * 3;
-    //并且轮子不能重叠
-    while(c1c2 < r1 + r2){
-        if (r1 - 0.1 > 0)
-            r1 -= 0.1;
-        if (r2 - 0.1 > 0)
-            r2 -= 0.1;
-    }
+    var c1 = Chromosome[1][0];
+    var c2 = Chromosome[2][0];
+    var r1 = Chromosome[1][1];
+    var r2 = Chromosome[2][1];
 
     fixDef.density = 1;
-    fixDef.friction = 0.8;
+    fixDef.friction = 1;
     fixDef.restitution =0.15;
 
+    bodyDef.userData = "carcircle";
     bodyDef.position.x = carbody_x + vector[c1].x;
     bodyDef.position.y = carbody_y + vector[c1].y;
     fixDef.shape = new b2CircleShape(r1);
+    fixDef.filter.categoryBits = 0x0004;
+    fixDef.filter.maskBits = 0x0001;
     var circle1 = world.CreateBody(bodyDef);
     circle1.CreateFixture(fixDef);
 
     bodyDef.position.x = carbody_x + vector[c2].x;
     bodyDef.position.y = carbody_y + vector[c2].y;
     fixDef.shape = new b2CircleShape(r2);
+    fixDef.filter.categoryBits = 0x0006;
+    fixDef.filter.maskBits = 0x0001;
     var circle2 = world.CreateBody(bodyDef);
     circle2.CreateFixture(fixDef);
 
@@ -83,7 +78,7 @@ function createCar(world) {
     //设置要连接的两个物体以及旋转点位置
     Revjoint1.Initialize(circle1, carbody, new b2Vec2(carbody_x + vector[c1].x, carbody_y + vector[c1].y));
     Revjoint1.enableMotor = true;
-    Revjoint1.motorSpeed = -Math.PI*4;
+    Revjoint1.motorSpeed = -Math.PI * 5;
     Revjoint1.maxMotorTorque = 150;
     world.CreateJoint(Revjoint1);
 
@@ -92,118 +87,15 @@ function createCar(world) {
     //设置要连接的两个物体以及旋转点位置
     Revjoint2.Initialize(circle2, carbody, new b2Vec2(carbody_x + vector[c2].x, carbody_y + vector[c2].y));
     Revjoint2.enableMotor = true;
-    Revjoint2.motorSpeed = -Math.PI*4;
+    Revjoint2.motorSpeed = -Math.PI * 5;
     Revjoint2.maxMotorTorque = 150;
     world.CreateJoint(Revjoint2);
 }
+
+
 //////////////////////////////////////////////////////////
 ////////所需函数
 //////////////////////////////////////////////////////////
-
-//随机生成绕着原点顺时针排列的随机点集（不知什么原因，部分点集会报错，将Box2d.js第3689行注释掉就不报了，但是不知道以后会不会影响其他功能）
-function random_vector(vectorCount) {
-    var init_vector = new Array();//初始化随机点
-    var sort_vector = new Array();//绕着原点顺时针排列随机点
-    var quadrantCount;//统计生成点分布在几个象限，每个象限都存在随机点，才不会产生三角形重叠
-
-    //检测是否分布在四个象限
-    do{
-        quadrantCount = 0;
-        sort_vector.splice(0,sort_vector.length);//清空数组
-        //随机生成vectorCount个点并装入init_point中
-        for(var i = 0; i < vectorCount; i++){
-            init_vector[i] = new b2Vec2(random_point(), random_point());
-            //如果坐标在坐标轴上，i--，下一次循环再次生成该坐标
-            if (init_vector[i].x * init_vector[i].y == 0)
-                i--;
-        }
-
-        //第一象限排序
-        for(var i = 0, temp = new Array(); i < vectorCount; i++){
-            if(init_vector[i].x < 0 && init_vector[i].y < 0){
-                temp.push(init_vector[i]);
-            }
-
-            if (i == vectorCount-1){
-                var temp1 = bubble_quadrant(temp);
-                if (temp1.length != 0){
-                    quadrantCount++;
-                    for(var j = 0; j < temp1.length; j++)
-                        sort_vector.push(temp1[j]);
-                }
-            }
-        }
-
-        //第二象限排序
-        for(var i = 0, temp = new Array(); i < vectorCount; i++){
-            if(init_vector[i].x > 0 && init_vector[i].y < 0){
-                temp.push(init_vector[i]);
-            }
-            if (i == vectorCount-1){
-                var temp1 = bubble_quadrant(temp);
-                if (temp1.length != 0){
-                    quadrantCount++;
-                    for(var j = 0; j < temp1.length; j++)
-                        sort_vector.push(temp1[j]);
-                }
-            }
-        }
-
-        //第三象限排序
-        for(var i = 0, temp = new Array(); i < vectorCount; i++){
-            if(init_vector[i].x > 0 && init_vector[i].y > 0){
-                temp.push(init_vector[i]);
-            }
-            if (i == vectorCount-1){
-                var temp1 = bubble_quadrant(temp);
-                if (temp1.length != 0){
-                    quadrantCount++;
-                    for(var j = 0; j < temp1.length; j++)
-                        sort_vector.push(temp1[j]);
-                }
-            }
-        }
-
-        //第四象限排序
-        for(var i = 0, temp = new Array(); i < vectorCount; i++){
-            if(init_vector[i].x < 0 && init_vector[i].y > 0){
-                temp.push(init_vector[i]);
-            }
-            if (i == vectorCount-1){
-                var temp1 = bubble_quadrant(temp);
-                if (temp1.length != 0){
-                    quadrantCount++;
-                    for(var j = 0; j < temp1.length; j++)
-                        sort_vector.push(temp1[j]);
-                }
-            }
-        }
-    }while(quadrantCount < 4);
-    return sort_vector;
-}
-//随机生成多边形顶点
-function random_point() {
-    if(Math.random() < 0.5){
-        return -(Math.random() * 3).toFixed(1);
-    }else{
-        return +(Math.random() * 3).toFixed(1);
-    }
-}
-//冒泡排序改版（象限排序）
-function bubble_quadrant(arr) {
-    //按照斜率从小到大排序
-    for(i=0;i<arr.length-1;i++){
-        for(j=0;j<arr.length-1-i;j++){
-            if(arr[j].y/arr[j].x>arr[j+1].y/arr[j+1].x){
-                var temp=arr[j];
-                arr[j]=arr[j+1];
-                arr[j+1]=temp;
-            }
-        }
-    }
-
-    return arr;
-}
 
 //////////////////////////////////////////////////////////
 ////////useless

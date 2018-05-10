@@ -1,14 +1,14 @@
-function createCar(world, Chromosome) {
+function createCar(world, Chromosome, id) {
     var bodyDef = new b2BodyDef();
     var fixDef = new b2FixtureDef();
     bodyDef.type = b2Body.b2_dynamicBody;
-    bodyDef.userData = "carbody";
+    bodyDef.userData = "carbody" + id;
 
 //////////////////////////////////////////////////////////
 ////////创建车身
 //////////////////////////////////////////////////////////
     var vector = Chromosome[0];//车身基因
-    var carbody_x = 25;//车身x坐标
+    var carbody_x = 20;//车身x坐标
     var carbody_y = 11.5;//车身y坐标
 
     bodyDef.position.x = carbody_x;
@@ -52,7 +52,7 @@ function createCar(world, Chromosome) {
     fixDef.friction = 1;
     fixDef.restitution =0.15;
 
-    bodyDef.userData = "carcircle";
+    bodyDef.userData = "carcircle" + id;
     bodyDef.position.x = carbody_x + vector[c1].x;
     bodyDef.position.y = carbody_y + vector[c1].y;
     fixDef.shape = new b2CircleShape(r1);

@@ -6,6 +6,7 @@ function createGround(world) {
     bodyDef.type = b2Body.b2_staticBody;
     bodyDef.position.x = 0;
     bodyDef.position.y = 0;
+    bodyDef.userData = "ground";
 
     fixDef.shape = new b2PolygonShape();
     fixDef.density = 20.0;

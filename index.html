@@ -10,17 +10,21 @@
             overflow: hidden;
         }
     </style>
+    <script src="createGround.js"></script>
 </head>
 <body onload="init();">
 <div id="camera" style="border: 1px solid red;">
     <canvas id="canvas" width="1200" height="600" style="background-color:#333333;"></canvas>
 </div>
+<p>距离为：<span id="distance"></span>米</p>
+<p>车子存活数：<span id="carAlive"></span></p>
 </body>
 <script type="text/javascript" src="Box2D.js"></script>
 <script type="text/javascript" src="chromosome_info.js"></script>
 <script type="text/javascript" src="createGround.js"></script>
 <script type="text/javascript" src="createCar.js"></script>
-<script type="text/javascript" src="fitness.js"></script>
+<script type="text/javascript" src="code.js"></script>
+<script type="text/javascript" src="selection.js"></script>
 <script>
     var   b2Vec2 = Box2D.Common.Math.b2Vec2
     ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -37,87 +41,136 @@
     ,   b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef
 ;
 
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var worldScale = 30;
+    var world = new b2World(new b2Vec2(0, 9.8),true);
+    var camera = {
+        x:0,
+        y:0
+    }
+    var ChromosomeGroup = new Array();//种群染色体
+    var fitness_score_list = new Array();//适应度评分表，行驶距离就是分数
+    var carDistance_list = new Array();//车子5秒前的行驶距离，用于判断是否销毁车子
+    var car_chance_list = new Array();//车子生存机会概率表
+    var carNum = 20;//每代车子数量
+    var carAlive = 0;//存活车子数量
+    var frame_rate = 60;//动画帧率
+
     function init() {
-        var canvas = document.getElementById("canvas");
-        var context = canvas.getContext("2d");
-        var worldScale = 30;
-        var world = new b2World(new b2Vec2(0, 9.8),true);
-        var camera = {
-            x:0,
-            y:0
-        }
-        var initChromosomeGroup = new Array();//初始种群染色体
         createGround(world);
-        for(var i = 0;i < 10;i++){
-            initChromosomeGroup[i] = randomChromosome(8);
-            createCar(world,initChromosomeGroup[i]);
+        for(var i = 0;i < carNum;i++){
+            ChromosomeGroup[i] = randomChromosome(8);
+            carDistance_list[i] = fitness_score_list[i] = 20;//车身初始位置为20米
+            createCar(world,ChromosomeGroup[i],i);
         }
         debugDraw();
-        setInterval(function(){update()}, 1000/60);
+        setInterval(update, 1000/frame_rate);
+        setInterval(car_dead_judge, 5000);
+    }
 
-        //函数
-        function debugDraw(){
-            var debugDraw = new b2DebugDraw();
-            debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
-            debugDraw.SetDrawScale(30.0);
-            debugDraw.SetFillAlpha(0.1);
-            debugDraw.SetLineThickness(1.0);
-            debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
-            world.SetDebugDraw(debugDraw);
-        };
-        function update() {
-            context.clearRect(camera.x,camera.y,1200,600);
-            world.Step(1/60,10,10);
-            world.DrawDebugData();
-            world.ClearForces();
-            update_camera();
-        };
-        function update_camera() {
-            var target_x,target_y;
-            var x_old = camera.x;
-            var y_old = camera.y;
-            var b_first = world.m_bodyList;
-            for(var b = world.m_bodyList; b != null; b = b.m_next){
-                if (b.GetUserData() == "carcircle"){
-                    if (b_first.GetPosition().x < b.GetPosition().x)
-                        b_first = b;
+    //主函数
+    function update() {
+        context.clearRect(camera.x,camera.y,1200,600);
+        world.Step(1/frame_rate,10,10);
+        world.DrawDebugData();
+        world.ClearForces();
+        update_camera();//同时进行适应度评分
+        //生成下一代种群
+        if (carAlive == 0){
+            var nextChromosomeGroup = new Array();//下一代种群染色体
+
+            //自然选择start---------------------
+            update_car_chance_list();//更新概率表
+            var car_select_list = new Array();//车子被选中下标
+            for (var i = 0; i < 10; i++){
+                car_select_list[i] = rouletteWheel();
+                //检测下标是否重复，重复则继续选择
+                for (var j = 0; j < car_select_list.length-1; j++){
+                    if (car_select_list[i] == car_select_list[j]){
+                        car_select_list[i] = rouletteWheel();
+                        j = 0;
+                    }
                 }
             }
-            target_x = b_first.GetPosition().x * worldScale;
-            target_y = b_first.GetPosition().y * worldScale;
+
+            //选出10条染色体确定存活到下一代
+            for (var i = 0; i < 10; i++){
+                var t = car_select_list[i];//下标
+                nextChromosomeGroup[i] = ChromosomeGroup[t];
+            }
+            //自然选择end-----------------------
+
+
+            //基因编码
+
+            //基因重组
+
+            //基因变异
+        }
+        data_show();
+    };
+    //Box2d基本配置
+    function debugDraw(){
+        var debugDraw = new b2DebugDraw();
+        debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
+        debugDraw.SetDrawScale(30.0);
+        debugDraw.SetFillAlpha(0.1);
+        debugDraw.SetLineThickness(1.0);
+        debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+        world.SetDebugDraw(debugDraw);
+    };
+    //更新摄像机位置
+    function update_camera() {
+        carAlive = 0;
+        var target_x,target_y;
+        var x_old = camera.x;
+        var y_old = camera.y;
+        var b_first = world.m_bodyList;
+        //遍历刚体
+        for(var b = world.m_bodyList; b != null; b = b.m_next){
+            if (b.GetUserData() != null && b.GetUserData() != "ground")
+                for(var i = 0; i < carNum;i++)
+                    if (b.GetUserData() == "carcircle" + i){
+                        //适应度评分
+                        fitness_score_list[i] = b.GetPosition().x.toFixed(2);
+                        //寻找最远车子
+                        if (b_first.GetPosition().x < b.GetPosition().x)
+                            b_first = b;
+
+                        carAlive += 0.5;
+                    }
+        }
+        target_x = b_first.GetPosition().x * worldScale;
+        target_y = b_first.GetPosition().y * worldScale;
+        if (carAlive > 0){
             camera.x = target_x - 600;
             camera.y = target_y - 400;
             context.translate(x_old-camera.x, y_old-camera.y);
         }
-        function del() {
-            //销毁车身和轮子的fixture，刚体仍然存在
-            for(var b = world.GetBodyList(); b != null; b = b.GetNext())
-                if (b.GetUserData() == "carbody" || b.GetUserData() == "carcircle")
-                    for(var f = b.GetFixtureList(); f != null; ){
-                        var f1 = f.GetNext();
-                        b.DestroyFixture(f);
-                        f = f1;
-                    }
+    }
+    //销毁不再前进的车子
+    function car_dead_judge() {
 
-            //销毁所有关节
-            for(var j = world.GetJointList(); j != null;){
-                var j1 = j.GetNext();
-                world.DestroyJoint(j);
-                j = j1;
-            }
-
-
-            //重新设置刚体位置
-            /*for(var b = world.GetBodyList(); b != null; b = b.GetNext()){
-                if (b.GetUserData() == "carbody"){
-                    b.SetPosition(new b2Vec2(25, 11.5));
-                }
-            }*/
-
+        //摧毁5秒内行驶距离低于5米的刚体
+        for(var i = 0; i < carNum; i++){
+            if (fitness_score_list[i] - carDistance_list[i] < 5)
+                for(var b = world.GetBodyList(); b != null;b = b.GetNext())
+                    if (b.GetUserData() == "carbody"+i || b.GetUserData() == "carcircle"+i)
+                        world.DestroyBody(b);
         }
 
-
-
+        //更新里程表
+        for(var i = 0; i < carNum; i++){
+            carDistance_list[i] = fitness_score_list[i];
+        }
+    }
+    // 当前最远行驶距离
+    function data_show() {
+        var distance = document.getElementById("distance");
+        distance.innerHTML = ((camera.x + 600) / worldScale).toFixed(2);
+        var caralive_ = document.getElementById("carAlive");
+        caralive_.innerHTML = carAlive;
     }
 </script>
 </html>

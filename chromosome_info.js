@@ -14,8 +14,8 @@ function randomChromosome(vectorCount) {
     }while(c1 == c2);
 
     //随机生成两个轮子半径,不小于0.5米(前面不加“+”号浏览器无法正常运行，不知为何)
-    var r1 = +(Math.random() * 3.2).toFixed(1);
-    var r2 = +(Math.random() * 3.2).toFixed(1);
+    var r1 = +(Math.random() * 3.1).toFixed(1);
+    var r2 = +(Math.random() * 3.1).toFixed(1);
 
     //生成轮子位置和半径基因
     carcirleChromosome1 = new Array(c1, r1);
@@ -113,9 +113,9 @@ function random_vector(vectorCount) {
 //随机生成多边形顶点
 function random_point() {
     if(Math.random() < 0.5){
-        return -(Math.random() * 3.2).toFixed(1);
+        return -(Math.random() * 3.1).toFixed(1);
     }else{
-        return +(Math.random() * 3.2).toFixed(1);
+        return +(Math.random() * 3.1).toFixed(1);
     }
 }
 //检测两点是否在同一直线上，存在返回true，不存在返回false

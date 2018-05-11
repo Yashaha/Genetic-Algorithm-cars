@@ -15,7 +15,6 @@ function update_car_chance_list(){
 
 //轮盘赌算法（选selectNum个下标，不重复，返回选中下标的数组）
 function rouletteWheel(){
-    var car_select_list = new Array();
     var chance = Math.random() * 100;//随机数选择
     var temp = 0;//概率累加器
 

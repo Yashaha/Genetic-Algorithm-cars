@@ -14,8 +14,8 @@ function randomChromosome(vectorCount) {
     }while(c1 == c2);
 
     //随机生成两个轮子半径,不小于0.5米(前面不加“+”号浏览器无法正常运行，不知为何)
-    var r1 = +(Math.random() * 3.1).toFixed(1);
-    var r2 = +(Math.random() * 3.1).toFixed(1);
+    var r1 = +(Math.random() * 3).toFixed(1);
+    var r2 = +(Math.random() * 3).toFixed(1);
 
     //生成轮子位置和半径基因
     carcirleChromosome1 = new Array(c1, r1);
@@ -25,7 +25,7 @@ function randomChromosome(vectorCount) {
     return Chromosome;
 }
 
-//随机生成绕着原点顺时针排列的随机点集（不知什么原因，部分点集会报错，将Box2d.js第3689行,5906行注释掉就不报了，但是不知道以后会不会影响其他功能）
+//随机生成绕着原点顺时针排列的随机点集
 function random_vector(vectorCount) {
     var init_vector = new Array();//初始化随机点
     var sort_vector = new Array();//绕着原点顺时针排列随机点
@@ -113,9 +113,9 @@ function random_vector(vectorCount) {
 //随机生成多边形顶点
 function random_point() {
     if(Math.random() < 0.5){
-        return -(Math.random() * 3.1).toFixed(1);
+        return -(Math.random() * 3).toFixed(1);
     }else{
-        return +(Math.random() * 3.1).toFixed(1);
+        return +(Math.random() * 3).toFixed(1);
     }
 }
 //检测两点是否在同一直线上，存在返回true，不存在返回false
@@ -143,4 +143,195 @@ function bubble_quadrant(arr) {
     }
 
     return arr;
+}
+
+//基因重组后对全局变量ChromosomeGroup进行坐标排序(废弃)
+function sort_ChromosomeGroup(vectorCount) {
+    var init_vector = ChromosomeGroup;//乱序
+    var sort_vector = new Array();//绕着原点顺时针排列随机点
+
+
+    //如果坐标在坐标轴上，坐标+0.1
+    for(var i = 0; i < init_vector.length; i++){
+        for(var j = 0; j < init_vector[i][0].length; j++){
+            if (init_vector[i][0][j].x == 0) init_vector[i][0][j].x += 0.1;
+            if (init_vector[i][0][j].y == 0) init_vector[i][0][j].y += 0.1;
+        }
+    }
+
+    for(var k = 0; k < init_vector.length; k++) {
+        //第一象限排序
+        for (var i = 0, temp = new Array(); i < vectorCount; i++) {
+            if (init_vector[k][0][i].x < 0 && init_vector[k][0][i].y < 0) {
+                temp.push(init_vector[i]);
+            }
+
+            if (i == vectorCount - 1) {
+                if (isline(temp)) {
+                    var arr1 = temp;
+                    for (var c = 0; c < arr1.length; c++) {
+                        var arr2 = arr[c];
+                        for (var f = c + 1; f < arr1.length; f++) {
+                            if (arr2.y * arr1[f].x == arr1[f].y * arr2.x)
+                                temp[f].y -= 0.1;//存在同一直线上的点
+                        }
+                    }
+                }//存在同一条直线上的两点，其中一点y+0.1
+
+                var temp1 = bubble_quadrant(temp);//排序
+                for (var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+
+
+        //第二象限排序
+        for (var i = 0, temp = new Array(); i < vectorCount; i++) {
+            if (init_vector[k][0][i].x > 0 && init_vector[k][0][i].y < 0) {
+                temp.push(init_vector[i]);
+            }
+            if (i == vectorCount - 1) {
+                if (isline(temp)) {
+                    var arr1 = temp;
+                    for (var c = 0; c < arr1.length; c++) {
+                        var arr2 = arr[c];
+                        for (var f = c + 1; f < arr1.length; f++) {
+                            if (arr2.y * arr1[f].x == arr1[f].y * arr2.x)
+                                temp[f].y -= 0.1;//存在同一直线上的点
+                        }
+                    }
+                }//存在同一条直线上的两点，其中一点y+0.1
+
+                var temp1 = bubble_quadrant(temp);//排序
+                for (var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+
+
+        //第三象限排序
+        for (var i = 0, temp = new Array(); i < vectorCount; i++) {
+            if (init_vector[k][0][i].x > 0 && init_vector[k][0][i].y > 0) {
+                temp.push(init_vector[i]);
+            }
+            if (i == vectorCount - 1) {
+                if (isline(temp)) {
+                    var arr1 = temp;
+                    for (var c = 0; c < arr1.length; c++) {
+                        var arr2 = arr[c];
+                        for (var f = c + 1; f < arr1.length; f++) {
+                            if (arr2.y * arr1[f].x == arr1[f].y * arr2.x)
+                                temp[f].y -= 0.1;//存在同一直线上的点
+                        }
+                    }
+                }//存在同一条直线上的两点，其中一点y+0.1
+
+                var temp1 = bubble_quadrant(temp);//排序
+                for (var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+
+
+        //第四象限排序
+        for (var i = 0, temp = new Array(); i < vectorCount; i++) {
+            if (init_vector[k][0][i].x < 0 && init_vector[k][0][i].y > 0) {
+                temp.push(init_vector[i]);
+            }
+            if (i == vectorCount - 1) {
+                if (isline(temp)) {
+                    var arr1 = temp;
+                    for (var c = 0; c < arr1.length; c++) {
+                        var arr2 = arr[c];
+                        for (var f = c + 1; f < arr1.length; f++) {
+                            if (arr2.y * arr1[f].x == arr1[f].y * arr2.x)
+                                temp[f].y -= 0.1;//存在同一直线上的点
+                        }
+                    }
+                }//存在同一条直线上的两点，其中一点y+0.1
+
+                var temp1 = bubble_quadrant(temp);//排序
+                for (var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+
+        ChromosomeGroup[k][0] = sort_vector;
+    }
+
+}
+
+//对单个染色体进行排序
+function sort_Chromosome(Chr) {
+    var init_vector = Chr;//初始化随机点
+    var sort_vector = new Array();//绕着原点顺时针排列随机点
+
+    for(var i = 0; i < init_vector[0].length; i++){
+        //如果坐标在坐标轴上，坐标加0.1
+        if (init_vector[0][i].x == 0) init_vector[0][i].x += 0.1;
+        if (init_vector[0][i].y == 0) init_vector[0][i].y += 0.1;
+    }
+
+    //第一象限排序
+    for(var i = 0, temp = new Array(); i < init_vector[0].length; i++){
+        if(init_vector[0][i].x < 0 && init_vector[0][i].y < 0){
+            temp.push(init_vector[0][i]);
+        }
+
+        if (i == init_vector[0].length-1){
+            var temp1 = bubble_quadrant(temp);
+            if (temp1.length != 0){
+                for(var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+    }
+
+    //第二象限排序
+    for(var i = 0, temp = new Array(); i < init_vector[0].length; i++){
+        if(init_vector[0][i].x > 0 && init_vector[0][i].y < 0){
+            temp.push(init_vector[0][i]);
+        }
+
+        if (i == init_vector[0].length-1){
+            var temp1 = bubble_quadrant(temp);
+            if (temp1.length != 0){
+                for(var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+    }
+
+    //第三象限排序
+    for(var i = 0, temp = new Array(); i < init_vector[0].length; i++){
+        if(init_vector[0][i].x > 0 && init_vector[0][i].y > 0){
+            temp.push(init_vector[0][i]);
+        }
+
+        if (i == init_vector[0].length-1){
+            var temp1 = bubble_quadrant(temp);
+            if (temp1.length != 0){
+                for(var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+    }
+
+    //第四象限排序
+    for(var i = 0, temp = new Array(); i < init_vector[0].length; i++){
+        if(init_vector[0][i].x < 0 && init_vector[0][i].y > 0){
+            temp.push(init_vector[0][i]);
+        }
+
+        if (i == init_vector[0].length-1){
+            var temp1 = bubble_quadrant(temp);
+            if (temp1.length != 0){
+                for(var j = 0; j < temp1.length; j++)
+                    sort_vector.push(temp1[j]);
+            }
+        }
+    }
+
+    Chr[0] = sort_vector;
+    return Chr;
 }

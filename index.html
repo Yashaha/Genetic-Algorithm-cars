@@ -25,6 +25,7 @@
 <script type="text/javascript" src="createCar.js"></script>
 <script type="text/javascript" src="code.js"></script>
 <script type="text/javascript" src="selection.js"></script>
+<script type="text/javascript" src="crossover.js"></script>
 <script>
     var   b2Vec2 = Box2D.Common.Math.b2Vec2
     ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -80,6 +81,7 @@
         if (carAlive == 0){
             var nextChromosomeGroup = new Array();//下一代种群染色体
 
+
             //自然选择start---------------------
             update_car_chance_list();//更新概率表
             var car_select_list = new Array();//车子被选中下标
@@ -94,19 +96,35 @@
                 }
             }
 
-            //选出10条染色体确定存活到下一代
+            //选出10条染色体确定存活到下一代（另外10条染色体由上一代杂交得到）
             for (var i = 0; i < 10; i++){
                 var t = car_select_list[i];//下标
                 nextChromosomeGroup[i] = ChromosomeGroup[t];
             }
             //自然选择end-----------------------
 
+            //基因重组start-----------------------
+            for(var i = 10, j = 0; i < carNum; i++, j+=2){
+                encode();//将全局变量ChromosomeGroup转换为二进制编码
+                var temp = crossover(ChromosomeGroup[j], ChromosomeGroup[j+1]);
+                temp = decode2(temp);
+                nextChromosomeGroup[i] = sort_Chromosome(temp);
+            }
+            ChromosomeGroup = nextChromosomeGroup;//将下一代种群染色体更新到全局变量ChromosomeGroup
+            //基因重组end-------------------------
 
-            //基因编码
 
-            //基因重组
+            //基因变异start-----------------------
+            //基因变异end-------------------------
 
-            //基因变异
+
+            //产生新种群
+            decode();//不知道为啥用了全局变量，局部变量获取全局变量值的时候，修改局部变量会导致全局变量也改变，以后少用全局变量
+            for(var i = 0;i < carNum;i++){
+                carDistance_list[i] = fitness_score_list[i] = 20;//车身初始位置为20米
+                createCar(world,ChromosomeGroup[i],i);
+            }
+
         }
         data_show();
     };

@@ -10,7 +10,14 @@
             overflow: hidden;
         }
     </style>
-    <script src="createGround.js"></script>
+	<script type="text/javascript" src="Box2D.js"></script>
+	<script type="text/javascript" src="chromosome_info.js"></script>
+	<script type="text/javascript" src="createGround.js"></script>
+	<script type="text/javascript" src="createCar.js"></script>
+	<script type="text/javascript" src="code.js"></script>
+	<script type="text/javascript" src="selection.js"></script>
+	<script type="text/javascript" src="crossover.js"></script>
+	<script type="text/javascript" src="mutation.js"></script>
 </head>
 <body onload="init();">
 <div id="camera" style="border: 1px solid red;">
@@ -19,13 +26,6 @@
 <p>距离为：<span id="distance"></span>米</p>
 <p>车子存活数：<span id="carAlive"></span></p>
 </body>
-<script type="text/javascript" src="Box2D.js"></script>
-<script type="text/javascript" src="chromosome_info.js"></script>
-<script type="text/javascript" src="createGround.js"></script>
-<script type="text/javascript" src="createCar.js"></script>
-<script type="text/javascript" src="code.js"></script>
-<script type="text/javascript" src="selection.js"></script>
-<script type="text/javascript" src="crossover.js"></script>
 <script>
     var   b2Vec2 = Box2D.Common.Math.b2Vec2
     ,	b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -77,14 +77,15 @@
         world.DrawDebugData();
         world.ClearForces();
         update_camera();//同时进行适应度评分
+
         //生成下一代种群
         if (carAlive == 0){
             var nextChromosomeGroup = new Array();//下一代种群染色体
+            var car_select_list = new Array();//车子被选中下标
 
 
             //自然选择start---------------------
             update_car_chance_list();//更新概率表
-            var car_select_list = new Array();//车子被选中下标
             for (var i = 0; i < 10; i++){
                 car_select_list[i] = rouletteWheel();
                 //检测下标是否重复，重复则继续选择
@@ -95,13 +96,24 @@
                     }
                 }
             }
-
-            //选出10条染色体确定存活到下一代（另外10条染色体由上一代杂交得到）
+            //精英保留一条染色体start------------
+            var temp = fitness_score_list[0];
+            car_select_list[0] = 0;
+            for(var i = 1; i < carNum; i++){
+                if (temp < fitness_score_list[i]){
+                    temp = fitness_score_list[i];
+                    car_select_list[0] = i;
+                }
+            }
+            //精英保留end-----------------------
+            console.log(car_select_list);
+            //选出10条染色体(第一条是精英染色体)确定存活到下一代，另外10条染色体由上一代杂交得到
             for (var i = 0; i < 10; i++){
                 var t = car_select_list[i];//下标
                 nextChromosomeGroup[i] = ChromosomeGroup[t];
             }
             //自然选择end-----------------------
+
 
             //基因重组start-----------------------
             for(var i = 10, j = 0; i < carNum; i++, j+=2){
@@ -115,6 +127,15 @@
 
 
             //基因变异start-----------------------
+            for (var i = 10; i < carNum; i++){
+                if (Math.random() < 0){//变异发生概率0.0
+                    decode();//不加这个转换成10进制，有可能全局变量会变成二进制，原因未明，以后少用全局变量
+                    var temp = mutation(ChromosomeGroup[i]);
+                    temp = decode2(temp);
+                    ChromosomeGroup[i] = sort_Chromosome(temp);
+					console.log("变异");
+                }
+            }
             //基因变异end-------------------------
 
 

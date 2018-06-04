@@ -23,7 +23,31 @@ function encode(){
             ChromosomeGroup[i][2][1] = format(ChromosomeGroup[i][2][1]);
         }
     }
+}
 
+//编码，将传入参数转为二进制
+function encode2(Chr) {
+    if (Chr[1][1].length != "6"){
+        //body坐标乘以十再转为二进制
+        for(var j = 0; j < Chr[0].length; j++){
+            Chr[0][j].x = (Chr[0][j].x * 10).toString(2);
+            Chr[0][j].y = (Chr[0][j].y * 10).toString(2);
+            //统一坐标格式
+            Chr[0][j].x = format(Chr[0][j].x);
+            Chr[0][j].y = format(Chr[0][j].y);
+        }
+
+        //circle参数乘以十再转为二进制
+        Chr[1][0] = (Chr[1][0] * 10).toString(2);
+        Chr[2][0] = (Chr[2][0] * 10).toString(2);
+        Chr[1][1] = (Chr[1][1] * 10).toString(2);
+        Chr[2][1] = (Chr[2][1] * 10).toString(2);
+        //统一直径格式（下标用统一）
+        Chr[1][1] = format(Chr[1][1]);
+        Chr[2][1] = format(Chr[2][1]);
+    }
+
+    return Chr;
 }
 
 //解码（将全局变量ChromosomeGroup从2进制转10进制）
@@ -46,19 +70,21 @@ function decode(){
     }
 }
 
-//解码，对传入的参数Chr进行解码
+//解码，对传入的参数Chr进行解码，二进制转十进制
 function decode2(Chr){
-    //body坐标转为10进制再除以十
-    for(var j = 0; j < Chr[0].length; j++){
-        Chr[0][j].x = parseInt(Chr[0][j].x, 2) / 10;
-        Chr[0][j].y = parseInt(Chr[0][j].y, 2) / 10;
-    }
+    if (Chr[1][1].length == "6"){
+        //body坐标转为10进制再除以十
+        for(var j = 0; j < Chr[0].length; j++){
+            Chr[0][j].x = parseInt(Chr[0][j].x, 2) / 10;
+            Chr[0][j].y = parseInt(Chr[0][j].y, 2) / 10;
+        }
 
-    //circle参数转为10进制再除以十
-    Chr[1][0] = parseInt(Chr[1][0], 2) / 10;
-    Chr[2][0] = parseInt(Chr[2][0], 2) / 10;
-    Chr[1][1] = parseInt(Chr[1][1], 2) / 10;
-    Chr[2][1] = parseInt(Chr[2][1], 2) / 10;
+        //circle参数转为10进制再除以十
+        Chr[1][0] = parseInt(Chr[1][0], 2) / 10;
+        Chr[2][0] = parseInt(Chr[2][0], 2) / 10;
+        Chr[1][1] = parseInt(Chr[1][1], 2) / 10;
+        Chr[2][1] = parseInt(Chr[2][1], 2) / 10;
+    }
 
     return Chr;
 }
